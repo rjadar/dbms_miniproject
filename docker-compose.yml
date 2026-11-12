@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: impact_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: local_dev_only
+    ports: ["5432:5432"]
+    volumes: ["impact-postgres:/var/lib/postgresql/data"]
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/local_dev_only
+    ports: ["7474:7474", "7687:7687"]
+    volumes: ["impact-neo4j:/data"]
+  mongodb:
+    image: mongo:7
+    ports: ["27018:27017"]
+    volumes: ["impact-mongo:/data/db"]
+volumes:
+  impact-postgres:
+  impact-neo4j:
+  impact-mongo:

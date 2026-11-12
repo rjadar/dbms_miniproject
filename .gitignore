@@ -1,0 +1,10 @@
+﻿.env
+.env.*
+!.env.example
+node_modules/
+.next/
+impact_backup.dump
+*.log
+.DS_Store
+
+tsconfig.tsbuildinfo
