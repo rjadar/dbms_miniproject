@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     if (matched(graphResult) !== 1) return NextResponse.json({ error: "Neo4j is missing one or both component nodes; synchronize the graph before adding this dependency" }, { status: 409 });
 
     try {
-      await sql.query("INSERT INTO dependency_edges(source_component_id,target_component_id) VALUES($1,$2) ON CONFLICT DO NOTHING", [sourceId, targetId]);
+      await sql.query("INSERT INTO dependency_edges(project_id,source_component_id,target_component_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [endpoints.rows[0].project_id, sourceId, targetId]);
     } catch (sqlError) {
       try { await replaceGraphFromPostgres(); }
       catch { throw new Error("PostgreSQL dependency write failed and graph resynchronization failed; check both databases before retrying"); }

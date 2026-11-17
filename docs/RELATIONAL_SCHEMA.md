@@ -1,6 +1,6 @@
 # Impact Atlas relational schema
 
-Based on `database/postgres/01_schema.sql`; live PostgreSQL catalog inspection confirmed the tables and constraints below.
+Based on `database/postgres/01_schema.sql` and a live check of native PostgreSQL on 17 November 2026. The current database has 12 dependency rows, all scoped to project 1. `dependency_edges.project_id` is NOT NULL and its foreign key to `projects` is validated. The composite same-project foreign keys defined in the DDL are not active in the live database because `components(project_id,id)` has no unique key there.
 
 ## Tables
 
@@ -34,14 +34,17 @@ Based on `database/postgres/01_schema.sql`; live PostgreSQL catalog inspection c
 | `description` | text | No | Defaults to empty text |
 | `updated_at` | timestamptz | No | Defaults to `now()`; maintained on UPDATE by trigger |
 
+The DDL defines a unique key on `(project_id, id)` so other tables can reference a component together with its project. That composite unique key is not present in the current live database; the live table has its primary key on `id` and uniqueness on `(project_id, name)`.
+
 ### `dependency_edges`
 
 | Column | Type | Null? | Key / rule |
 |---|---|---:|---|
-| `source_component_id` | integer | No | Composite primary key; FK to `components.id`, `ON DELETE CASCADE` |
-| `target_component_id` | integer | No | Composite primary key; FK to `components.id`, `ON DELETE CASCADE` |
+| `project_id` | integer | No | FK to `projects.id`, `ON DELETE CASCADE`; scopes the edge |
+| `source_component_id` | integer | No | Composite primary key; live FK to `components.id` |
+| `target_component_id` | integer | No | Composite primary key; live FK to `components.id` |
 
-Additional check disallows a component depending directly on itself. The source and target columns define a directed edge; both endpoints must be valid components.
+An additional check disallows a component depending directly on itself. The DDL defines composite foreign keys enforcing that both endpoints belong to `project_id`, but those constraints are not active in the current live database.
 
 ### `impact_analyses`
 
@@ -53,6 +56,8 @@ Additional check disallows a component depending directly on itself. The source 
 | `changed_by` | integer | Yes | FK to `app_users.id`, `ON DELETE SET NULL` |
 | `affected_count` | integer | No | Defaults to 0 |
 | `created_at` | timestamptz | No | Defaults to `now()` |
+
+The DDL defines an additional composite foreign key `(project_id, component_id)` referencing `components(project_id, id)`. That composite constraint is not active in the current live database.
 
 ## Relationships and indexes
 

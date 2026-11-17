@@ -1,6 +1,6 @@
 # Impact Atlas viva preparation
 
-Answers below describe the current repository and the database state inspected on 27 October 2026. They do not claim that untested app workflows have passed.
+Answers below describe the implementation and its current verification state as of 17 November 2026. PostgreSQL, Neo4j and MongoDB are installed natively and working. No database reset was performed.
 
 ## Likely questions
 
@@ -14,11 +14,11 @@ Projects, components, users, constraints and analysis history fit relational tab
 
 ### What is the ER model?
 
-`projects` contains `components`; `dependency_edges` relates one component to another using a composite key; `impact_analyses` records a project, changed component, affected count, timestamp and optional user. See `ER_DIAGRAM.md` and `RELATIONAL_SCHEMA.md`.
+`projects` contains `components`; `dependency_edges` relates one component to another; `impact_analyses` records a project, changed component, affected count, timestamp and optional user. See `ER_DIAGRAM.md` and `RELATIONAL_SCHEMA.md`. The DDL defines composite same-project endpoint keys, but those composite foreign keys are not active in the current live database.
 
 ### Which integrity constraints can you show?
 
-Primary keys identify rows. Unique constraints prevent duplicate project names, duplicate email addresses and duplicate component names within a project. Foreign keys connect components, edges and analyses to their parents; cascade/set-null behavior is shown in the schema. Checks limit user roles and disallow self-dependencies.
+Primary keys identify rows. Unique constraints prevent duplicate project names, duplicate email addresses and duplicate component names within a project. Foreign keys connect components, edges and analyses to their parents; the live `dependency_edges.project_id` column is NOT NULL and its foreign key to `projects` is validated. The live database does not have the composite source/target foreign keys from the DDL, so do not claim database-level enforcement that both endpoints belong to that project.
 
 ### How are application users authenticated?
 
@@ -34,7 +34,11 @@ Application users carry `admin` or `developer` in `app_users`; route handlers ch
 
 ### What does the stored procedure do?
 
-`record_impact(p_project, p_component, p_user, p_count)` inserts an `impact_analyses` row. The app calls it after graph traversal to persist the affected count. The procedure and trigger exist in the live schema; their invocation was not exercised during the read-only audit.
+`record_impact(p_project, p_component, p_user, p_count)` inserts an `impact_analyses` row. The app calls it after graph traversal to persist the affected count. It was invoked with disposable values inside a transaction that was rolled back.
+
+### What standalone business function can you demonstrate?
+
+`project_component_count(p_project)` returns the number of components in a project. `02_advanced.sql` calls it for each project; it returned `Atlas Commerce | 10` in the verified database. This is separate from `set_component_updated_at()`, which is a trigger function.
 
 ### What SQL query concepts are included?
 
@@ -46,7 +50,7 @@ The dependency direction is source-to-target (`source DEPENDS_ON target`). For a
 
 ### What is MongoDB used for?
 
-It stores component review notes as documents in `component_notes`. The API reads notes, upserts a note, and deletes a note. The inspected database has two notes, including the payment-service seed note. No vector index or vector search is implemented.
+It stores component review notes as documents in `component_notes`. Creating, reading and deleting notes have been verified. Updating an existing note has not been verified as a separate update operation. The current collection has two documents. Legacy documents use `component_id`; newer documents use `componentName`, and the DELETE API checks both fields. No vector index or vector search is implemented.
 
 ### Can I run SQL in Notepad?
 
@@ -54,9 +58,9 @@ Notepad is a text editor, not a database client. You can open `database/viva_com
 
 ### What has actually been verified?
 
-Read-only database connections and catalog/data checks succeeded for all three configured stores. PostgreSQL currently has 2 users, 1 project, 10 components, 12 edges and 4 analyses. The 10 Neo4j nodes and 12 relationships match the PostgreSQL components and edges. MongoDB has two component note documents. The read-only nested/correlated/recursive/join queries returned rows. Browser login, API CRUD and end-to-end impact execution were not tested in this audit.
+The native PostgreSQL, Neo4j and MongoDB services are working. PostgreSQL currently has 2 users, 1 project, 11 components, 12 dependency rows and 8 analyses. Neo4j has 11 component nodes and 12 relationships. Dependency creation/removal and impact analysis were verified. MongoDB note create/read/delete were verified; update was not. Developer permission restrictions and the production build passed. Component rename did not work during testing. Trigger and procedure checks used a transaction that was rolled back, and the advanced query examples ran successfully. A recent direct Admin login attempt with the configured password returned HTTP 401, so confirm the Admin credentials before the viva.
 
 ### What is still missing?
 
-The lecturer’s modification questionnaire was not found and must be provided. The rubric’s “RUD” wording is not interpreted here; the project does not currently implement vector search. PostgreSQL database role grants exist, but application requests use the shared database account rather than those roles.
+The lecturer’s modification questionnaire was not found and must be provided. The rubric’s “RUD” wording is not interpreted here; the project does not currently implement vector search. PostgreSQL database role grants exist, but application requests use the shared database account rather than those roles. Component rename failed during testing, and MongoDB existing-note update has not been verified.
 

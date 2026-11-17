@@ -17,6 +17,9 @@ export async function POST(req:Request) {
 export async function DELETE(req:Request) {
   try {
     const user=await requireUser(); if(user.role!=="admin") return NextResponse.json({error:"Admin role required"},{status:403});
-    const name=new URL(req.url).searchParams.get("componentName"); await (await collection()).deleteOne({componentName:name}); return NextResponse.json({ok:true});
+    const name=new URL(req.url).searchParams.get("componentName"); if(!name) return NextResponse.json({error:"Component note not found"},{status:404});
+    const result=await (await collection()).deleteOne({$or:[{componentName:name},{component_id:name}]});
+    if(result.deletedCount===0) return NextResponse.json({error:"Component note not found"},{status:404});
+    return NextResponse.json({ok:true});
   } catch(e) { return NextResponse.json({error:e instanceof Error?e.message:"MongoDB unavailable"},{status:400}); }
 }

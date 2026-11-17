@@ -1,37 +1,34 @@
 # Impact Atlas: viva audit
 
-Audit basis: source files in this repository plus read-only inspection of the configured databases on 27 October 2026. No application mutations were run for this audit. The questionnaire was not present in the repository.
+Audit basis: source files, read-only checks of the current native databases, and the reported end-to-end tests as of 17 November 2026. No database reset was performed. The lecturer's modification questionnaire was not found in the repository.
 
 ## Requirements checklist
 
 | Lecturer requirement | Finding | Evidence and limitation |
 |---|---|---|
-| Users and authentication | Implemented in code; seeded users exist | `app_users` contains 2 rows. Login checks bcrypt password hashes and issues a signed, HTTP-only session cookie in `src/lib/auth.ts` and `src/app/api/login/route.ts`. User creation is the `npm run seed:users` script. No user-management UI/API is present. Login was not exercised in this audit. |
-| CRUD operations and constraints | SQL constraints verified; application CRUD handlers present; end-to-end API CRUD not tested | The PostgreSQL schema has five tables and primary/foreign/unique/check constraints. Project CRUD endpoints exist, but the UI only selects projects; project create/edit/delete are not exposed in the dashboard. Component add/edit/delete controls and APIs exist. Mongo component notes have API read/upsert/delete operations. No API CRUD smoke test was run. |
-| SQL INSERT, UPDATE, DELETE | Present in SQL and application code | `04_seed.sql` contains INSERT statements; component/project APIs issue INSERT, UPDATE and DELETE; `02_advanced.sql` installs an UPDATE trigger. Safe transaction-scoped examples are in `database/viva_commands.sql`. |
-| SQL commands runnable from Notepad | SQL file prepared; Notepad itself cannot execute SQL | Open/edit the `.sql` file in Notepad, then execute it through pgAdmin Query Tool or `psql`. See `database/viva_commands.sql`. A database client is still required. |
-| ER diagram and relational schema | Prepared from the actual PostgreSQL schema | See `ER_DIAGRAM.md` and `RELATIONAL_SCHEMA.md`. The five live PostgreSQL tables and their constraints match `01_schema.sql`. |
-| Advanced queries, triggers, functions and procedures | Definitions are present; read-only query examples executed; trigger/procedure invocation not tested | The live database contains `set_component_updated_at()` (trigger function), trigger `components_updated_at`, and procedure `record_impact`. Nested, correlated, recursive and join SELECT examples returned rows when run read-only against the live database. No UPDATE or CALL was executed to avoid changing data. |
-| Database roles and permissions | PostgreSQL group roles and grants exist; application DB RBAC is not enforced | Live roles `impact_admin` and `impact_developer` exist and are `NOLOGIN`. Table and sequence grants match `03_roles.sql`; `impact_developer` can read project/component/dependency/analysis tables and insert analyses; `impact_admin` can read/write those tables. Neither role has privileges on `app_users`. The application connects as `postgres` via `DATABASE_URL`; Admin/Developer restrictions are API-level checks, not PostgreSQL roles. |
-| Modification questionnaire | Missing | No questionnaire file or matching reference was found in the repository. Provide the lecturer’s questionnaire to complete this requirement. |
+| Users and authentication | PARTIAL | Login uses bcrypt password hashes and signed HTTP-only session cookies through `src/app/api/login/route.ts` and `src/lib/auth.ts`; `scripts/create-users.mjs` seeds accounts. An earlier browser check completed both logins. Developer permission restrictions passed. The latest direct Admin login attempt using the configured password returned HTTP 401, so confirm the viva Admin credentials. |
+| CRUD operations and constraints | PARTIAL | Project/API and component create/delete operations were exercised. Dependency edge creation and removal were verified. Component rename did not work during testing. MongoDB notes can be created, read and deleted; updating an existing note was not verified as an update operation. |
+| SQL INSERT, UPDATE, DELETE | IMPLEMENTED / TESTED IN PART | `04_seed.sql` and API operations demonstrate DML; safe transaction-scoped examples are in `database/viva_commands.sql`. Trigger and procedure tests used a transaction that was rolled back. Do not treat the failed component rename as a working operation. |
+| SQL commands runnable from Notepad | PREPARED | `database/viva_commands.sql` can be opened or edited in Notepad, then executed through `psql` or pgAdmin. Notepad itself is not a SQL execution client. |
+| ER diagram and relational schema | PREPARED WITH LIVE LIMITATION | See `ER_DIAGRAM.md` and `RELATIONAL_SCHEMA.md`. The SQL DDL defines composite same-project constraints; the current live database does not have the composite endpoint foreign keys. |
+| Advanced queries, triggers, functions and procedures | VERIFIED | Nested, correlated, recursive CTE and JOIN queries ran. The standalone `project_component_count()` returned 10 for Atlas Commerce. The trigger and `record_impact` procedure were exercised with changes rolled back. |
+| Database roles and permissions | PARTIAL | API-level Developer restrictions passed. PostgreSQL `impact_admin` and `impact_developer` are SQL demonstration roles; direct checks showed Developer SELECT succeeded and a disallowed INSERT was denied. The web app connects through the shared `DATABASE_URL` account, so PostgreSQL group-role RBAC is not enforced for app requests. |
+| Modification questionnaire | MISSING | No questionnaire file or matching reference was found. Provide the lecturer's questionnaire; its requirements are not inferred here. |
 
-## Setup documentation discrepancy
+## Current native database state
 
-`docker-compose.yml` publishes MongoDB host port `27018`, while `.env.example`, the MongoDB seed comment, and README setup command refer to `27017`. The configured `.env` successfully connected to the live MongoDB for this audit, but the checked-in setup instructions are inconsistent. Use the host port actually published by Compose when preparing the local environment; this audit did not edit those existing files.
+- PostgreSQL, Neo4j and MongoDB are installed locally and working. The current setup uses native services.
+- PostgreSQL `impact_db` currently contains 2 users, 1 project, 11 components, 12 dependency rows and 8 impact analyses. The live dependency rows have `project_id = 1`; all 12 match both endpoint components' project. The `project_id` column is NOT NULL and its foreign key to `projects` is validated.
+- The live `dependency_edges` table does not currently have the composite source/target foreign keys defined in `database/postgres/01_schema.sql`. The supporting unique key on `components(project_id,id)` is also absent from the live database.
+- Neo4j currently contains 11 `Component` nodes and 12 `DEPENDS_ON` relationships. Dependency edge creation/removal and impact analysis traversal have been verified.
+- MongoDB `impact_demo.component_notes` currently contains 2 documents. Create, read and delete operations were verified. Existing-note update behavior was not verified.
+- `npm run build` passed. Developer permission restrictions passed. Component rename failed during testing.
 
-## Live database checks
+## Remaining viva gaps
 
-- PostgreSQL connection succeeded as database user `postgres`. Current counts: 2 users, 1 project, 10 components, 12 dependency edges, 4 impact analyses.
-- PostgreSQL contains `app_users`, `projects`, `components`, `dependency_edges`, and `impact_analyses`. Primary keys, foreign keys, uniqueness and self-edge/role checks were inspected from the live catalog.
-- Neo4j contains 10 `Component` nodes and 12 `DEPENDS_ON` relationships. Node IDs/names/kinds and edge endpoint IDs match PostgreSQL exactly in the read-only comparison performed for this audit.
-- MongoDB database `impact_demo` contains `component_notes` with 2 documents; the `payment-service` seed note is present.
-- The read-only nested/correlated/recursive/join queries returned 1, 6, 13 and 4 rows respectively. Build, sign-in, browser interaction, API CRUD, impact analysis endpoint, and rollback-based procedure/trigger demonstrations were not run as part of this audit. Database presence and source code are not proof of those full application workflows.
-
-## Gaps to prioritize
-
-1. Complete the lecturer’s modification questionnaire when it is provided.
-2. Demonstrate the app with Admin and Developer accounts, including a real impact run and one reversible CRUD example.
-3. Explain that Notepad edits SQL but a PostgreSQL client executes it.
-4. Be precise about PostgreSQL RBAC: SQL role grants exist, but the web app uses the shared `postgres` database account.
-5. Do not claim vector search: no vector database/index/search feature is implemented, and the rubric’s “RUD” wording has not been interpreted here.
-
+1. Confirm the Admin credentials intended for the viva; the latest direct login attempt with the configured password returned HTTP 401.
+2. Do not demonstrate component rename as working; it failed during testing.
+3. Do not claim that editing an existing MongoDB note was verified.
+4. Explain that PostgreSQL group roles are demonstrated through SQL but are not used by the app's shared database connection.
+5. The rubric's “RUD” wording is not defined here; no vector search is implemented or claimed.
+6. Obtain and complete the lecturer's modification questionnaire.
