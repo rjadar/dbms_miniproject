@@ -15,14 +15,15 @@
 2. Show the overview, project selection and dependency graph.
 3. Demonstrate adding and removing a dependency edge; both operations have been verified.
 4. Select a component and run impact analysis. Show the direct and indirect dependents and their paths; this flow has been verified.
-5. Demonstrate MongoDB note creation, reading and deletion. Do not claim that editing an existing note has been verified as an update.
-6. Avoid the component rename control during the demo; rename did not work during testing. Other tested component create/delete operations may be demonstrated with care.
-7. Sign in as Developer and show that read/analysis operations are allowed while Admin-only mutations are rejected. Developer permissions passed.
-8. Open `database/viva_commands.sql` in Notepad, then execute it with a PostgreSQL client. Its DML example ends with `ROLLBACK`.
-9. Show the standalone `project_component_count()` result for Atlas Commerce, the nested and correlated queries, recursive CTE and JOIN, plus the trigger and procedure. These database examples were verified; the trigger/procedure demonstration was rolled back.
-10. Show `03_roles.sql` and explain that PostgreSQL group grants are for SQL-client demonstrations. The app's shared `DATABASE_URL` connection does not use those roles.
-11. Present the ER diagram and relational schema. Explain that the live database has the `dependency_edges.project_id` foreign key, while the composite source/target foreign keys in the DDL are not active in the current database.
-12. State that the modification questionnaire is pending because it was not found in the repository.
+5. Show recent impact history and explain that `record_impact` stores the analysis in PostgreSQL.
+6. Demonstrate MongoDB note creation, reading and deletion. Do not claim that editing an existing note has been verified as an update.
+7. Avoid the component rename control during the demo; rename did not work during testing. Other tested component create/delete operations may be demonstrated with care.
+8. Sign in as Developer and show that read/analysis operations are allowed while Admin-only mutations are rejected. Developer permissions passed.
+9. Open `database/viva_commands.sql` in Notepad, then execute it with a PostgreSQL client. Its DML example ends with `ROLLBACK`.
+10. Show the standalone `project_component_count()` result for Atlas Commerce, the nested and correlated queries, recursive CTE and JOIN, plus the trigger and procedure. These database examples were verified; the trigger/procedure demonstration was rolled back.
+11. Show `03_roles.sql` and explain that PostgreSQL group grants are for SQL-client demonstrations. The app's shared `DATABASE_URL` connection does not use those roles.
+12. Present the ER diagram and relational schema. Explain that the live database has the `dependency_edges.project_id` foreign key, while the composite source/target foreign keys in the DDL are not active in the current database.
+13. State that the modification questionnaire is pending because it was not found in the repository.
 
 ## Keep claims accurate
 

@@ -14,7 +14,7 @@ A compact university DBMS project for managing software dependencies and explori
 
 Requirements: Node.js 20+ and PostgreSQL 14+, Neo4j 5+ and MongoDB 6+. The current working setup uses these databases installed natively; Docker Compose is an optional alternative.
 
-1. Start PostgreSQL, Neo4j and MongoDB using your local installation. Copy `.env.example` to `.env` and configure it with your own database URLs, usernames and passwords. Do not commit `.env`. Create the PostgreSQL schema and sample records using your own connection URL in place of the placeholder below:
+1. Start PostgreSQL, Neo4j and MongoDB using your local installation or run `docker compose up -d`. The current Compose mapping publishes MongoDB on host port `27018`. Copy `.env.example` to `.env` and configure it with your own database URLs, usernames and passwords. Do not commit `.env`. Create the PostgreSQL schema and sample records using your own connection URL in place of the placeholder below:
 
    ```sh
    psql "<your PostgreSQL connection URL>" -f database/postgres/01_schema.sql
