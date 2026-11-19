@@ -37,8 +37,7 @@ export async function GET() {
       .find({}, { projection: { _id: 0 } })
       .toArray();
 
-    // find() retrieves documents; toArray() converts them into an array.
-    // projection: { _id: 0 } hides MongoDB's default _id field.
+   
 
     return NextResponse.json(rows); // Send notes as JSON.
   } 
